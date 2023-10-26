@@ -1,0 +1,59 @@
+#include <msp430xG46x.h>    
+
+         ORG 1100h
+IDs       DW  0,6,5,6,4,7,5,9  ;Shahmon
+IDn       DW  1,6,5,0,8,3,3,2  ;Neal
+IDsize    DW  9
+num       DW  0
+
+         RSEG    CSTACK
+         RSEG    CODE
+                    
+Main     MOV   #SFE(CSTACK),SP   ; Mov #0x3100,SP 
+         PUSH    IDsize
+         PUSH    #num
+         PUSH    #IDs
+         PUSH    #IDn 
+         CALL    #Func
+         MOV   #SFE(CSTACK),SP   ; Clear SP
+L1       JMP     L1
+;--------------------------------------------Func-----------------------
+Func
+         MOV   2(SP),R10   ;pointer to idn
+         MOV   4(SP),R5    ;pointer to ids
+         MOV   6(SP),R4    ;num
+         MOV   8(SP),R15   ;size
+         CLR   R14
+;-------------Loop------------------------------------------------------
+L2       DEC   R15
+         JZ    L7
+         MOV   @R5+,R8
+         MOV   @R10+,R9
+         BIT   #1,R8
+         JNZ   L3
+         BIT   #1,R9
+         JNZ   L4
+         CMP   R8,R9
+         JN    L5
+         ADD   R9,R14
+         JMP   L2
+
+L3       BIT   #1,R9
+         JNZ   L2
+         ADD   R9,R14
+         JMP   L2
+         
+L4       ADD   R8,R14
+         JMP   L2
+         
+L5       ADD   R8,R14
+         JMP   L2
+         
+L7       MOV   R14,0(R4) 
+         RET    ;Return to main          
+;-------------------------------------------------------------------------------
+         COMMON  INTVEC                  ; Interrupt Vectors
+;-------------------------------------------------------------------------------
+         ORG     RESET_VECTOR            ; POR, ext. Reset
+         DW      Main
+         END

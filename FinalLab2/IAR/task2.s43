@@ -1,0 +1,98 @@
+#include <msp430xG46x.h>    
+
+         ORG 1100h
+IDs       DW  0,6,5,6,4,7,5,9  ;Shahmon
+IDn       DW  1,6,5,0,8,3,3,2  ;Neal
+ParityOnes1 DS16 8
+ParityOnes2 DS16 8
+IDsize    DW  9
+
+         RSEG    CSTACK
+         RSEG    CODE
+                    
+Main     MOV   #SFE(CSTACK),SP   ; Mov #0x3100,SP 
+         PUSH    IDsize
+         PUSH    #IDs
+         PUSH    #IDn 
+         PUSH    #ParityOnes1 
+         PUSH    #ParityOnes2
+         CALL    #OnesFunc
+         MOV   #SFE(CSTACK),SP   ; Clear SP
+L1       JMP     L1
+
+;--------------------------------
+OnesFunc
+         MOV   2(SP),R14   ;pointer to Parity1
+         MOV   4(SP),R4    ;pointer to Parity2
+         MOV   6(SP),R10    ;Idn
+         MOV   8(SP),R5    ;Ids  
+         MOV   10(SP),R15   ;size
+                    
+L2       DEC   R15         ;loop - size
+         JZ    L7          
+         MOV   @R5+,R8
+         MOV   R8,R11     ;Save the value
+         MOV   @R10+,R9
+         MOV   R9,R12      ;Save the value
+         CLRC
+         XOR   #0,R8       ;check if the value s have odd
+         JNZ   L3
+         CLRC
+         XOR   #0,R9       ;check if the value n have odd
+         CLRC
+         JNZ   L4
+         JMP   L8
+           
+L3      XOR   #0,R9
+        JNZ   L6
+        XOR   #0,R11
+        JNZ   L11
+        MOV    #1,0(R4)
+        MOV    #2,0(R14)
+        INCD   R4 
+        INCD   R14
+        JMP    L2
+        
+L4      CMP    #0,R11
+        JEQ    L10
+        MOV    #1,0(R4)      ;N1,S2
+        MOV    #2,0(R14)
+        INCD   R4 
+        INCD   R14
+        JMP    L2
+        
+        
+L6      MOV    #2,0(R4)      ;N1,S2
+        MOV    #2,0(R14)
+        INCD   R4 
+        INCD   R14
+        JMP    L2
+        
+L8      MOV    #1,0(R4)      ;N1,S2
+        MOV    #1,0(R14)
+        INCD   R4 
+        INCD   R14
+        JMP    L2  
+        
+L10     MOV    #0,0(R4)      ;N1,S2
+        MOV    #1,0(R14)
+        INCD   R4 
+        INCD   R14
+        JMP    L2
+
+L11     MOV    #2,0(R4)      ;N1,S2
+        MOV    #0,0(R14)
+        INCD   R4 
+        INCD   R14
+        JMP    L2
+L12
+
+L7      NOP
+        RET    ;Return to main
+        
+;-------------------------------------------------------------------------------
+         COMMON  INTVEC                  ; Interrupt Vectors
+;-------------------------------------------------------------------------------
+         ORG     RESET_VECTOR            ; POR, ext. Reset
+         DW      Main
+         END
